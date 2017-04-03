@@ -24,9 +24,7 @@ var path = require('path'),
     T = new Twit(config.twitter),
     stream = T.stream('statuses/lacanomatic');
 
-_.mixin( require('underscore.deferred') ),
 app.use(express.static('public'));
-
 
 //thank you to https://github.com/dariusk/museumbot for this scraping code - see LICENSE
 var baseUrl = 'http://www.metmuseum.org/api/collection/collectionlisting?artist=&department=&era=&geolocation=&material=&showOnly=withImage&sortBy=AccessionNumber&sortOrder=asc&page=';

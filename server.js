@@ -1,9 +1,10 @@
+/* for scraping code */
 var fs = require('fs');
 var request = require('request');
 var _ = require('underscore');
 _.mixin( require('underscore.deferred') );
 
-/* Setting things up. */
+/* Setting things up for the bot. */
 var path = require('path'),
     express = require('express'),
     app = express(),   
@@ -27,8 +28,7 @@ _.mixin( require('underscore.deferred') ),
 app.use(express.static('public'));
 
 
-//thank you to https://github.com/dariusk/museumbot for the scraping code - MIT license
-//var baseUrl = 'http://www.metmuseum.org/collection/the-collection-online/search?ft=*&ao=on&noqs=true&rpp=30&pg=';
+//thank you to https://github.com/dariusk/museumbot for this scraping code - see LICENSE
 var baseUrl = 'http://www.metmuseum.org/api/collection/collectionlisting?artist=&department=&era=&geolocation=&material=&showOnly=withImage&sortBy=AccessionNumber&sortOrder=asc&page=';
 Array.prototype.pick = function() {
   return this[Math.floor(Math.random()*this.length)];
@@ -55,7 +55,7 @@ function generate(resp) {
         var stream = fs.createWriteStream('hires.jpg');
         stream.on('close', function() {
           console.log('done');
-          tweet(resp);
+          tweet(name,resp);
         });
         var r = request(bigImageUrl).pipe(stream);
       }
@@ -63,27 +63,15 @@ function generate(resp) {
   });
 }
 
-function tweet(resp) {
-  console.log('tweeting');
-  /*
-  T.post('statuses/update', { status: 'hello world 👋' }, function(err, data, response) {
-    if (err){
-      resp.sendStatus(500);
-      console.log('Error!');
-      console.log(err);
-    }
-    else{
-      resp.sendStatus(200);
-    }
-  });
-  */
+function tweet(img_name,resp) {
+  console.log('tweeting ' + img_name);
   // first we must post the media to Twitter
   var b64content = fs.readFileSync('hires.jpg', { encoding: 'base64' })
   T.post('media/upload', { media_data: b64content }, function (err, data, response) {
     // now we can assign alt text to the media, for use by screen readers and
     // other text-based presentations and interpreters
-    var mediaIdStr = data.media_id_string
-    var altText = "TODO"
+    var mediaIdStr = data.media_id_string;
+    var altText = img_name;
     var meta_params = { media_id: mediaIdStr, alt_text: { text: altText } }
 
     T.post('media/metadata/create', meta_params, function (err, data, response) {
@@ -104,6 +92,9 @@ function tweet(resp) {
   })
 }
 
+app.use(express.static('views'));
+
+//cron this call to the url + secret endpoint
 app.all("/" + process.env.BOT_ENDPOINT, function (request, response) {
   generate(response);
 });
